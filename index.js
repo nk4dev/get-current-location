@@ -47,7 +47,7 @@ function success(pos) {
 
   const map = new ol.Map({
     layers: [openfreemap],
-    view: new ol.View({ center: ol.proj.fromLonLat([crd.longitude, crd.latitude]), zoom: 13.5 }),
+    view: new ol.View({ center: ol.proj.fromLonLat([crd.longitude, crd.latitude]), zoom: 15.0 }),
     target: 'map',
   })
   olms.apply(openfreemap, 'https://tiles.openfreemap.org/styles/liberty')
