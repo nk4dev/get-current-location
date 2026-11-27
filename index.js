@@ -1,6 +1,7 @@
 const geodisp = document.getElementById("geodisp");
 const geodispLat = document.getElementById("geodispLat");
 const geodispLng = document.getElementById("geodispLng");
+const refreshLocBtn = document.getElementById("refresh-loc-btn");
 const copyLatBtn = document.getElementById("copy-lat-btn");
 const copyLngBtn = document.getElementById("copy-lng-btn");
 
@@ -10,9 +11,25 @@ let map = null;
 
 const options = {
   // enableHighAccuracy: true,
-  // timeout: 5000,
+  timeout: 10000,
   // maximumAge: 0,
 };
+
+function setRefreshingState(isRefreshing) {
+  refreshLocBtn.disabled = isRefreshing;
+  refreshLocBtn.innerText = isRefreshing ? "取得中..." : "現在地を再取得";
+}
+
+function requestCurrentLocation() {
+  if (!navigator.geolocation) {
+    geodisp.textContent = "このブラウザは位置情報に対応していません。";
+    return;
+  }
+
+  setRefreshingState(true);
+  geodisp.textContent = "現在地を取得しています...";
+  navigator.geolocation.getCurrentPosition(success, error, options);
+}
 
 async function copyToClipboard(text, buttonElement) {
   if (!text) return;
@@ -32,6 +49,7 @@ async function copyToClipboard(text, buttonElement) {
   }
 }
 
+refreshLocBtn.addEventListener("click", requestCurrentLocation);
 copyLatBtn.addEventListener("click", () => copyToClipboard(currentLat, copyLatBtn));
 copyLngBtn.addEventListener("click", () => copyToClipboard(currentLng, copyLngBtn));
 
@@ -40,16 +58,16 @@ function initOrUpdateMap(lat, lng) {
 
   if (!map) {
     map = new ol.Map({
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.OSM(),
+        }),
+      ],
       view: new ol.View({
         center,
         zoom: 15.0,
       }),
       target: "map",
-    });
-
-    // olms.apply には LayerGroup ではなく ol.Map インスタンスを渡す
-    olms.apply(map, "https://tiles.openfreemap.org/styles/liberty").catch((err) => {
-      console.error("地図スタイルの適用に失敗しました:", err);
     });
   } else {
     map.getView().setCenter(center);
@@ -57,6 +75,8 @@ function initOrUpdateMap(lat, lng) {
 }
 
 function success(pos) {
+  setRefreshingState(false);
+
   const crd = pos.coords;
   currentLat = String(crd.latitude);
   currentLng = String(crd.longitude);
@@ -72,8 +92,11 @@ function success(pos) {
 }
 
 function error(err) {
+  setRefreshingState(false);
+
   geodisp.textContent = `ERROR(${err.code}): ${err.message}`;
   console.warn(`ERROR(${err.code}): ${err.message}`);
 }
 
-navigator.geolocation.getCurrentPosition(success, error, options);
+// 初回読み込み時に現在地を取得
+requestCurrentLocation();
